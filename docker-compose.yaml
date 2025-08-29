@@ -1,0 +1,37 @@
+version: "3.8"
+
+services:
+  app:
+    build: .
+    ports:
+      - "8080:8080"
+    environment:
+      - DATABASE_DRIVER=sqlite3
+      - DATABASE_DSN=/root/roombooker.db
+      - JWT_SECRET=your-secret-key
+      - APP_BASE_URL=http://localhost:8080
+      - OFFICE_TZ=America/New_York
+    depends_on:
+      - db
+    networks:
+      - roombooker
+
+  db:
+    image: postgres:15
+    environment:
+      - POSTGRES_DB=roombooker
+      - POSTGRES_USER=roombooker
+      - POSTGRES_PASSWORD=password
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - roombooker
+
+volumes:
+  postgres_data:
+
+networks:
+  roombooker:
+    driver: bridge
