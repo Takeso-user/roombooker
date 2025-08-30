@@ -1,107 +1,106 @@
 -- +migrate Up
-CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
+-- SQLite version without UUID extension
 
 CREATE TABLE users (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    email VARCHAR(255) UNIQUE NOT NULL,
-    display_name VARCHAR(255),
-    role VARCHAR(50) NOT NULL DEFAULT 'user',
-    auth_provider VARCHAR(50),
-    password_hash VARCHAR(255),
-    mfa_enabled BOOLEAN DEFAULT FALSE,
-    timezone VARCHAR(100) DEFAULT 'UTC',
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+    id TEXT PRIMARY KEY DEFAULT (lower(hex(randomblob(4))) || '-' || lower(hex(randomblob(2))) || '-4' || substr(lower(hex(randomblob(2))),2) || '-' || substr('89ab',abs(random()) % 4 + 1, 1) || substr(lower(hex(randomblob(2))),2) || '-' || lower(hex(randomblob(6)))),
+    email TEXT UNIQUE NOT NULL,
+    display_name TEXT,
+    role TEXT NOT NULL DEFAULT 'user',
+    auth_provider TEXT,
+    password_hash TEXT,
+    mfa_enabled INTEGER DEFAULT 0,
+    timezone TEXT DEFAULT 'UTC',
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
 );
 
 CREATE TABLE oauth_accounts (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    user_id UUID REFERENCES users(id) ON DELETE CASCADE,
-    provider VARCHAR(50) NOT NULL,
-    subject VARCHAR(255) NOT NULL,
-    email VARCHAR(255),
-    raw_profile_json JSONB,
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+    id TEXT PRIMARY KEY DEFAULT (lower(hex(randomblob(4))) || '-' || lower(hex(randomblob(2))) || '-4' || substr(lower(hex(randomblob(2))),2) || '-' || substr('89ab',abs(random()) % 4 + 1, 1) || substr(lower(hex(randomblob(2))),2) || '-' || lower(hex(randomblob(6)))),
+    user_id TEXT REFERENCES users(id) ON DELETE CASCADE,
+    provider TEXT NOT NULL,
+    subject TEXT NOT NULL,
+    email TEXT,
+    raw_profile_json TEXT,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP
 );
 
 CREATE TABLE offices (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    name VARCHAR(255) NOT NULL,
-    timezone VARCHAR(100) DEFAULT 'UTC'
+    id TEXT PRIMARY KEY DEFAULT (lower(hex(randomblob(4))) || '-' || lower(hex(randomblob(2))) || '-4' || substr(lower(hex(randomblob(2))),2) || '-' || substr('89ab',abs(random()) % 4 + 1, 1) || substr(lower(hex(randomblob(2))),2) || '-' || lower(hex(randomblob(6)))),
+    name TEXT NOT NULL,
+    timezone TEXT DEFAULT 'UTC'
 );
 
 CREATE TABLE floors (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    office_id UUID REFERENCES offices(id) ON DELETE CASCADE,
+    id TEXT PRIMARY KEY DEFAULT (lower(hex(randomblob(4))) || '-' || lower(hex(randomblob(2))) || '-4' || substr(lower(hex(randomblob(2))),2) || '-' || substr('89ab',abs(random()) % 4 + 1, 1) || substr(lower(hex(randomblob(2))),2) || '-' || lower(hex(randomblob(6)))),
+    office_id TEXT REFERENCES offices(id) ON DELETE CASCADE,
     number INTEGER NOT NULL,
-    label VARCHAR(255)
+    label TEXT
 );
 
 CREATE TABLE rooms (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    floor_id UUID REFERENCES floors(id) ON DELETE CASCADE,
-    name VARCHAR(255) NOT NULL,
+    id TEXT PRIMARY KEY DEFAULT (lower(hex(randomblob(4))) || '-' || lower(hex(randomblob(2))) || '-4' || substr(lower(hex(randomblob(2))),2) || '-' || substr('89ab',abs(random()) % 4 + 1, 1) || substr(lower(hex(randomblob(2))),2) || '-' || lower(hex(randomblob(6)))),
+    floor_id TEXT REFERENCES floors(id) ON DELETE CASCADE,
+    name TEXT NOT NULL,
     capacity INTEGER NOT NULL,
-    equipment JSONB,
-    has_graph_integration BOOLEAN DEFAULT FALSE,
-    graph_resource_id VARCHAR(255),
-    color VARCHAR(7),
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+    equipment TEXT,
+    has_graph_integration INTEGER DEFAULT 0,
+    graph_resource_id TEXT,
+    color TEXT,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP
 );
 
 CREATE TABLE bookings (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    room_id UUID REFERENCES rooms(id) ON DELETE CASCADE,
-    created_by UUID REFERENCES users(id) ON DELETE CASCADE,
-    title VARCHAR(255) NOT NULL,
+    id TEXT PRIMARY KEY DEFAULT (lower(hex(randomblob(4))) || '-' || lower(hex(randomblob(2))) || '-4' || substr(lower(hex(randomblob(2))),2) || '-' || substr('89ab',abs(random()) % 4 + 1, 1) || substr(lower(hex(randomblob(2))),2) || '-' || lower(hex(randomblob(6)))),
+    room_id TEXT REFERENCES rooms(id) ON DELETE CASCADE,
+    created_by TEXT REFERENCES users(id) ON DELETE CASCADE,
+    title TEXT NOT NULL,
     description TEXT,
-    starts_at_utc TIMESTAMP WITH TIME ZONE NOT NULL,
-    ends_at_utc TIMESTAMP WITH TIME ZONE NOT NULL,
+    starts_at_utc DATETIME NOT NULL,
+    ends_at_utc DATETIME NOT NULL,
     rrule TEXT,
-    status VARCHAR(50) DEFAULT 'active',
-    external_event_id VARCHAR(255),
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-    EXCLUDE (room_id WITH =, tstzrange(starts_at_utc, ends_at_utc) WITH &&) WHERE (status = 'active')
+    status TEXT DEFAULT 'active',
+    external_event_id TEXT,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
 );
 
 CREATE TABLE booking_participants (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    booking_id UUID REFERENCES bookings(id) ON DELETE CASCADE,
-    email VARCHAR(255) NOT NULL,
-    is_required BOOLEAN DEFAULT TRUE,
-    response_status VARCHAR(50)
+    id TEXT PRIMARY KEY DEFAULT (lower(hex(randomblob(4))) || '-' || lower(hex(randomblob(2))) || '-4' || substr(lower(hex(randomblob(2))),2) || '-' || substr('89ab',abs(random()) % 4 + 1, 1) || substr(lower(hex(randomblob(2))),2) || '-' || lower(hex(randomblob(6)))),
+    booking_id TEXT REFERENCES bookings(id) ON DELETE CASCADE,
+    email TEXT NOT NULL,
+    is_required INTEGER DEFAULT 1,
+    response_status TEXT
 );
 
 CREATE TABLE booking_rules (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    office_id UUID REFERENCES offices(id) ON DELETE CASCADE,
-    workday_start TIME NOT NULL,
-    workday_end TIME NOT NULL,
-    max_duration INTERVAL NOT NULL,
-    min_lead_time INTERVAL NOT NULL,
-    buffer_before INTERVAL DEFAULT '0 minutes',
-    buffer_after INTERVAL DEFAULT '0 minutes',
-    allow_recurring BOOLEAN DEFAULT FALSE,
-    timezone VARCHAR(100) DEFAULT 'UTC',
-    effective_from TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+    id TEXT PRIMARY KEY DEFAULT (lower(hex(randomblob(4))) || '-' || lower(hex(randomblob(2))) || '-4' || substr(lower(hex(randomblob(2))),2) || '-' || substr('89ab',abs(random()) % 4 + 1, 1) || substr(lower(hex(randomblob(2))),2) || '-' || lower(hex(randomblob(6)))),
+    office_id TEXT REFERENCES offices(id) ON DELETE CASCADE,
+    workday_start TEXT NOT NULL,
+    workday_end TEXT NOT NULL,
+    max_duration TEXT NOT NULL,
+    min_lead_time TEXT NOT NULL,
+    buffer_before TEXT DEFAULT '0 minutes',
+    buffer_after TEXT DEFAULT '0 minutes',
+    allow_recurring INTEGER DEFAULT 0,
+    timezone TEXT DEFAULT 'UTC',
+    effective_from DATETIME DEFAULT CURRENT_TIMESTAMP
 );
 
 CREATE TABLE holidays (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    office_id UUID REFERENCES offices(id) ON DELETE CASCADE,
-    date DATE NOT NULL,
-    description VARCHAR(255)
+    id TEXT PRIMARY KEY DEFAULT (lower(hex(randomblob(4))) || '-' || lower(hex(randomblob(2))) || '-4' || substr(lower(hex(randomblob(2))),2) || '-' || substr('89ab',abs(random()) % 4 + 1, 1) || substr(lower(hex(randomblob(2))),2) || '-' || lower(hex(randomblob(6)))),
+    office_id TEXT REFERENCES offices(id) ON DELETE CASCADE,
+    date TEXT NOT NULL,
+    description TEXT
 );
 
 CREATE TABLE audit_logs (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    actor_user_id UUID REFERENCES users(id) ON DELETE SET NULL,
-    action VARCHAR(100) NOT NULL,
-    entity_type VARCHAR(100) NOT NULL,
-    entity_id UUID NOT NULL,
-    payload_json JSONB,
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+    id TEXT PRIMARY KEY DEFAULT (lower(hex(randomblob(4))) || '-' || lower(hex(randomblob(2))) || '-4' || substr(lower(hex(randomblob(2))),2) || '-' || substr('89ab',abs(random()) % 4 + 1, 1) || substr(lower(hex(randomblob(2))),2) || '-' || lower(hex(randomblob(6)))),
+    actor_user_id TEXT REFERENCES users(id) ON DELETE SET NULL,
+    action TEXT NOT NULL,
+    entity_type TEXT NOT NULL,
+    entity_id TEXT NOT NULL,
+    payload_json TEXT,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP
 );
 
 -- Indexes

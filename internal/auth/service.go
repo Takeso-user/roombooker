@@ -2,12 +2,11 @@ package auth
 
 import (
 	"context"
-	"crypto/rand"
 	"time"
 
 	"github.com/go-chi/jwtauth/v5"
 	"github.com/golang-jwt/jwt/v5"
-	"golang.org/x/crypto/argon2"
+	"golang.org/x/crypto/bcrypt"
 
 	"roombooker/internal/config"
 	"roombooker/internal/repository"
@@ -28,14 +27,15 @@ func NewService(repo *repository.Repository, cfg *config.Config) *Service {
 }
 
 func (s *Service) HashPassword(password string) []byte {
-	salt := make([]byte, 32)
-	_, err := rand.Read(salt)
-	if err != nil {
-		// Fallback to fixed salt if random fails
-		salt = []byte("some-random-salt-fixed-fallback")
+	h, _ := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
+	return h
+}
+
+func (s *Service) VerifyPassword(hash []byte, password string) bool {
+	if err := bcrypt.CompareHashAndPassword(hash, []byte(password)); err != nil {
+		return false
 	}
-	hash := argon2.IDKey([]byte(password), salt, 1, 64*1024, 4, 32)
-	return hash
+	return true
 }
 
 func (s *Service) GenerateToken(userID string) (string, error) {
